@@ -1842,8 +1842,10 @@ static UniValue getblockstats(const JSONRPCRequest& request)
     LOCK(cs_main);
 
     CBlockIndex* pindex;
-    if (request.params[0].isNum()) {
-        const int height = request.params[0].get_int();
+    std::set<std::string> stats;
+
+    if (!request.params[1].isNull() && request.params[1].isNum()) {
+        const int height = request.params[1].get_int();
         const int current_tip = chainActive.Height();
         if (height < 0) {
             throw JSONRPCError(RPC_INVALID_PARAMETER, strprintf("Target block height %d is negative", height));
@@ -1853,6 +1855,13 @@ static UniValue getblockstats(const JSONRPCRequest& request)
         }
 
         pindex = chainActive[height];
+        if (!request.params[2].isNull()){
+            const UniValue stats_univalue = request.params[2].get_array();
+            for (unsigned int i = 0; i < stats_univalue.size(); i++) {
+                const std::string stat = stats_univalue[i].get_str();
+                stats.insert(stat);
+            } 
+        }
     } else {
         const uint256 hash(ParseHashV(request.params[0], "hash_or_height"));
         pindex = LookupBlockIndex(hash);
@@ -1862,18 +1871,16 @@ static UniValue getblockstats(const JSONRPCRequest& request)
         if (!chainActive.Contains(pindex)) {
             throw JSONRPCError(RPC_INVALID_PARAMETER, strprintf("Block is not in chain %s", Params().NetworkIDString()));
         }
+        if (!request.params[1].isNull()){
+            const UniValue stats_univalue = request.params[1].get_array();
+            for (unsigned int i = 0; i < stats_univalue.size(); i++) {
+                const std::string stat = stats_univalue[i].get_str();
+                stats.insert(stat);
+            } 
+        }
     }
 
     assert(pindex != nullptr);
-
-    std::set<std::string> stats;
-    if (!request.params[1].isNull()) {
-        const UniValue stats_univalue = request.params[1].get_array();
-        for (unsigned int i = 0; i < stats_univalue.size(); i++) {
-            const std::string stat = stats_univalue[i].get_str();
-            stats.insert(stat);
-        }
-    }
 
     const CBlock block = GetBlockChecked(pindex);
 
