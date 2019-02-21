@@ -107,6 +107,9 @@ class P2PConnection(asyncio.Protocol):
         # Should only call methods on this from the NetworkThread, c.f. call_soon_threadsafe
         self._transport = None
 
+    def log_buffer(self):
+        return (self._transport.get_write_buffer_limits(),self._transport.get_write_buffer_size())
+
     @property
     def is_connected(self):
         return self._transport is not None
@@ -276,6 +279,9 @@ class P2PInterface(P2PConnection):
 
         # The network services received from the peer
         self.nServices = 0
+
+    def log_buffer(self):
+        return (self._transport.get_write_buffer_limits(),self._transport.get_write_buffer_size())
 
     def peer_connect(self, *args, services=NODE_NETWORK|NODE_WITNESS, send_version=True, **kwargs):
         create_conn = super().peer_connect(*args, **kwargs)

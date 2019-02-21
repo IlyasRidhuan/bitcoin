@@ -99,6 +99,7 @@ class InvalidMessagesTest(BitcoinTestFramework):
             for i in range(80):
                 print("Inserting message {}, current node size is {})".format(
                     i,node.get_mem_rss_kilobytes()))
+                print("Buffer size, BufferLimit {}".format(node.p2p.log_buffer()))
                 # print("Inserting message ",i )
                 # print("Current node usage",)
                 node.p2p.send_message(msg_at_size)
