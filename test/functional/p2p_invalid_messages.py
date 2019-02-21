@@ -86,7 +86,7 @@ class InvalidMessagesTest(BitcoinTestFramework):
         #
         msg_at_size = msg_unrecognized(str_data="b" * valid_data_limit)
         # assert len(msg_at_size.serialize()) == msg_limit
-        tracemalloc.start()
+        tracemalloc.start(25)
 
         increase_allowed = 0.5
         if [s for s in os.environ.get("BITCOIN_CONFIG", "").split(" ") if "--with-sanitizers" in s and "address" in s]:
@@ -95,7 +95,7 @@ class InvalidMessagesTest(BitcoinTestFramework):
             self.log.info(
                 "Sending a bunch of large, junk messages to test "
                 "memory exhaustion. May take a bit...")
-
+            start = time.time()
             # Run a bunch of times to test for memory exhaustion.
             for i in range(80):
 
@@ -118,6 +118,8 @@ class InvalidMessagesTest(BitcoinTestFramework):
                     print("[ Top 10 ]")
                     for stat in top_stats[:10]:
                         print(stat)
+            end = time.time()
+            print(end - start)
 
             # Check that, even though the node is being hammered by nonsense from one
             # connection, it can still service other peers in a timely way.
