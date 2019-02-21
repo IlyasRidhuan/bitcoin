@@ -10,6 +10,7 @@ from test_framework import messages
 from test_framework.mininode import P2PDataStore
 from test_framework.test_framework import BitcoinTestFramework
 
+import tracemalloc
 
 class msg_unrecognized:
     """Nonsensical message. Modeled after similar types in test_framework.messages."""
@@ -71,10 +72,30 @@ class InvalidMessagesTest(BitcoinTestFramework):
             self.log.info(
                 "Sending a bunch of large, junk messages to test "
                 "memory exhaustion. May take a bit...")
-
+            tracemalloc.start(25)
             # Run a bunch of times to test for memory exhaustion.
-            for _ in range(80):
+            for i in range(80):
+                size_before = node.get_mem_rss_kilobytes()
+                print("============= Before Sending Message =============")
+                print("Message #{}, memory footprint: {}".format(i,size_before))
+                print("Buffer write size limits: {}".format(node.p2p._transport.get_write_buffer_limits()))
+                print("Current output buffer size {}\n".format(node.p2p._transport.get_write_buffer_size()))
+                # print("Inserting message ",i )
+                # print("Current node usage",)
                 node.p2p.send_message(msg_at_size)
+                size_after = node.get_mem_rss_kilobytes()
+                print("============= After Sending Message =============")
+                print("Message #{}, memory footprint: {}".format(i,size_after))
+                print("Buffer write size limits: {}".format(node.p2p._transport.get_write_buffer_limits()))
+                print("Current output buffer size {}\n".format(node.p2p._transport.get_write_buffer_size()))
+                # time.sleep(0.2)
+                if (size_after/size_before -1) > 0.05:
+                    snapshot = tracemalloc.take_snapshot()
+                    top_stats = snapshot.statistics('lineno')
+
+                    print("[ Top 10 ]")
+                    for stat in top_stats[:10]:
+                        print(stat)
 
             # Check that, even though the node is being hammered by nonsense from one
             # connection, it can still service other peers in a timely way.
@@ -91,18 +112,18 @@ class InvalidMessagesTest(BitcoinTestFramework):
         #
         # Send an oversized message, ensure we're disconnected.
         #
-        msg_over_size = msg_unrecognized(str_data="b" * (valid_data_limit + 1))
-        assert len(msg_over_size.serialize()) == (msg_limit + 1)
+        # msg_over_size = msg_unrecognized(str_data="b" * (valid_data_limit + 1))
+        # assert len(msg_over_size.serialize()) == (msg_limit + 1)
 
-        with node.assert_debug_log(["Oversized message from peer=4, disconnecting"]):
-            # An unknown message type (or *any* message type) over
-            # MAX_PROTOCOL_MESSAGE_LENGTH should result in a disconnect.
-            node.p2p.send_message(msg_over_size)
-            node.p2p.wait_for_disconnect(timeout=4)
+        # with node.assert_debug_log(["Oversized message from peer=4, disconnecting"]):
+        #     # An unknown message type (or *any* message type) over
+        #     # MAX_PROTOCOL_MESSAGE_LENGTH should result in a disconnect.
+        #     node.p2p.send_message(msg_over_size)
+        #     node.p2p.wait_for_disconnect(timeout=4)
 
-        node.disconnect_p2ps()
-        conn = node.add_p2p_connection(P2PDataStore())
-        conn.wait_for_verack()
+        # node.disconnect_p2ps()
+        # conn = node.add_p2p_connection(P2PDataStore())
+        # conn.wait_for_verack()
 
         #
         # 2.

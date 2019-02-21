@@ -335,7 +335,7 @@ class TestNode():
             return
 
         perc_increase_memory_usage = (after_memory_usage / before_memory_usage) - 1
-
+        print("Memory usage increase {} ".format(perc_increase_memory_usage))
         if perc_increase_memory_usage > increase_allowed:
             self._raise_assertion_error(
                 "Memory usage increased over threshold of {:.3f}% from {} to {} ({:.3f}%)".format(
