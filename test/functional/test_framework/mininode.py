@@ -110,6 +110,11 @@ class P2PConnection(asyncio.Protocol):
     def log_buffer(self):
         return (self._transport.get_write_buffer_limits(),self._transport.get_write_buffer_size())
 
+    def set_buffer(self,low=16384,high=10000000):
+        return self._transport.set_write_buffer_limits(high,low)
+
+
+
     @property
     def is_connected(self):
         return self._transport is not None
@@ -224,10 +229,11 @@ class P2PConnection(asyncio.Protocol):
             # Python <3.4.4 does not have is_closing, so we have to check for
             # its existence explicitly as long as Bitcoin Core supports all
             # Python 3.4 versions.
-            if hasattr(self._transport, 'is_closing') and self._transport.is_closing():
-                return
+            # if hasattr(self._transport, 'is_closing') and self._transport.is_closing():
+            #     return
             self._transport.write(raw_message_bytes)
         NetworkThread.network_event_loop.call_soon_threadsafe(maybe_write)
+        # NetworkThread.network_event_loop.call_soon_threadsafe(self._transport.write(raw_message_bytes))
 
     # Class utility methods
 
