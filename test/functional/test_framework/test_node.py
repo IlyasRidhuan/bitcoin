@@ -20,6 +20,10 @@ import urllib.parse
 import collections
 import shlex
 import sys
+import tracemalloc
+
+from memory_profiler import profile
+
 
 from .authproxy import JSONRPCException
 from .util import (
@@ -316,7 +320,9 @@ class TestNode():
                     self._raise_assertion_error('Expected message "{}" does not partially match log:\n\n{}\n\n'.format(expected_msg, print_log))
 
     @contextlib.contextmanager
+    @profile
     def assert_memory_usage_stable(self, *, increase_allowed=0.03):
+        
         """Context manager that allows the user to assert that a node's memory usage (RSS)
         hasn't increased beyond some threshold percentage.
 
@@ -325,17 +331,19 @@ class TestNode():
                 e.g. `0.12` for up to 12% increase allowed.
         """
         before_memory_usage = self.get_mem_rss_kilobytes()
+        print("Before memory usage {}",before_memory_usage)
 
         yield
 
         after_memory_usage = self.get_mem_rss_kilobytes()
+        print("After memory usage {}",after_memory_usage)
 
         if not (before_memory_usage and after_memory_usage):
             self.log.warning("Unable to detect memory usage (RSS) - skipping memory check.")
             return
-
+        
         perc_increase_memory_usage = (after_memory_usage / before_memory_usage) - 1
-
+        print("% increase in memory {}",perc_increase_memory_usage)
         if perc_increase_memory_usage > increase_allowed:
             self._raise_assertion_error(
                 "Memory usage increased over threshold of {:.3f}% from {} to {} ({:.3f}%)".format(
