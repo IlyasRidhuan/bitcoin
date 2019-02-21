@@ -12,7 +12,7 @@ from test_framework.test_framework import BitcoinTestFramework
 
 from memory_profiler import profile
 import tracemalloc
-
+import time
 class msg_unrecognized:
     """Nonsensical message. Modeled after similar types in test_framework.messages."""
 
@@ -97,19 +97,27 @@ class InvalidMessagesTest(BitcoinTestFramework):
                 "memory exhaustion. May take a bit...")
 
             # Run a bunch of times to test for memory exhaustion.
-            for i in range(12):
-                print("Inserting message {}, current node size is {})".format(i,node.get_mem_rss_kilobytes()))
+            for i in range(80):
 
+                size_before = node.get_mem_rss_kilobytes()
+                print("============= Before Sending Message =============")
+                print("Message #{}, memory footprint: {}".format(i,size_before))
+                print("Buffer size, BufferLimit {}\n".format(node.p2p.log_buffer()))
                 # print("Inserting message ",i )
                 # print("Current node usage",)
                 node.p2p.send_message(msg_at_size)
-                print("Buffer size, BufferLimit after send message {}".format(node.p2p.log_buffer()))
-                snapshot = tracemalloc.take_snapshot()
-                top_stats = snapshot.statistics('lineno')
+                size_after = node.get_mem_rss_kilobytes()
+                print("============= After Sending Message =============")
+                print("Message #{}, memory footprint: {}".format(i,size_after))
+                print("Buffer size, BufferLimit {}".format(node.p2p.log_buffer()))
+                # time.sleep(0.2)
+                if (size_after/size_before -1) > 0.05:
+                    snapshot = tracemalloc.take_snapshot()
+                    top_stats = snapshot.statistics('lineno')
 
-                print("[ Top 10 ]")
-                for stat in top_stats[:10]:
-                    print(stat)
+                    print("[ Top 10 ]")
+                    for stat in top_stats[:10]:
+                        print(stat)
 
             # Check that, even though the node is being hammered by nonsense from one
             # connection, it can still service other peers in a timely way.
